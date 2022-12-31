@@ -2,7 +2,7 @@
   "profiles": {
     "SharpQMapParser.ConsoleLogger": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\Vinyl Hunger\\Maps\\church.map\""
+      "commandLineArgs": "\"D:\\Gamedev\\QuakeDev\\quake_map_source\\E1M1.MAP\""
     }
   }
 }

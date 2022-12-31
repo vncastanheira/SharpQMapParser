@@ -8,6 +8,6 @@ namespace SharpQMapParser.Core
         public string TextureName = string.Empty;
         public int XOff, YOff;
         public int Rotation;
-        public int XScale, YScale;
+        public float XScale, YScale;
     }
 }

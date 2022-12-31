@@ -1,6 +1,6 @@
 ﻿namespace SharpQMapParser.Core
 {
-    public class Point
+    public struct Point
     {
         public int x, y, z;
 
