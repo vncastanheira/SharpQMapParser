@@ -1,6 +1,6 @@
 ﻿using System.Dynamic;
 
-namespace SharpQMapParser
+namespace SharpQMapParser.Core
 {
     public class Plane
     {
