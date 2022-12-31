@@ -89,7 +89,8 @@ namespace SharpQMapParser.Core
                     switch (MapFormat)
                     {
                         case MapFormat.Standard:
-                            ParseStandardFormat(line);
+                            var plane = ParseStandardFormat(line);
+                            currentBrush.Planes.Add(plane);
                             break;
                         case MapFormat.Valve:
                             break;
@@ -172,11 +173,6 @@ namespace SharpQMapParser.Core
             }
 
             return plane;
-        }
-
-        void ParseValveFormat(MatchCollection matchCollection)
-        {
-
         }
     }
 

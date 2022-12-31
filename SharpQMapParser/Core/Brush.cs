@@ -1,7 +1,9 @@
-﻿namespace SharpQMapParser.Core
+﻿using System.Collections.Generic;
+
+namespace SharpQMapParser.Core
 {
     public class Brush
     {
-        public Plane[] Planes = new Plane[6];
+        public List<Plane> Planes = new List<Plane>(6);
     }
 }
