@@ -1,5 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using SharpQMapParser.Core;
+using SharpQMapParser;
 
 if (args.Length> 0)
 {
@@ -18,6 +18,7 @@ if (args.Length> 0)
 			Console.WriteLine($"Entities found: {map.Entities.Count}");
 			var worldspawn = map.Entities.Find(e => e.ClassName == "worldspawn");
             Console.WriteLine($"Brushes found: {worldspawn.Brushes.Count}");
+
         }
 		catch (Exception ex)
 		{

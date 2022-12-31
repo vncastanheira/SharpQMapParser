@@ -2,15 +2,28 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using SharpQMapParser.Core;
 
-namespace SharpQMapParser.Core
+namespace SharpQMapParser
 {
     public class Map
     {
+        const string NUMERIC_REGEX_STR = @"\s-?\d+[\.*\d+]*";               // matches all numbers
+        const string POINTS_REGEX_STR = @"\(\s-?\d+\s-?\d+\s-?\d+\s\)";     // matches all Point values
+
         public List<Entity> Entities = new List<Entity>();
         public MapFormat MapFormat;
 
-        int _lineNumber = 0;
+
+        private Regex NumericReg { get; }  
+        private Regex PointsReg { get; }
+        private int _lineNumber = 0;
+
+        public Map()
+        {
+            NumericReg = new Regex(NUMERIC_REGEX_STR);
+            PointsReg = new Regex(POINTS_REGEX_STR);
+        }
 
         public void Parse(StreamReader textStream, MapFormat mapFormat = MapFormat.Standard)
         {
@@ -129,11 +142,10 @@ namespace SharpQMapParser.Core
         Plane ParseStandardFormat(string line)
         {
             var plane = new Plane();
-            
+
             // Match numeric values
 
-            var reg = new Regex(@"\s-?\d+[\.*\d+]*"); // matches all numbers
-            var matchCollection = reg.Matches(line);
+            var matchCollection = NumericReg.Matches(line);
 
             if (matchCollection.Count == 14)
             {
@@ -171,7 +183,11 @@ namespace SharpQMapParser.Core
             {
                 throw new MapParsingException($"Incorrect numeric values count on line {_lineNumber}");
             }
-
+            
+            // Load texture
+            var textureName = PointsReg.Replace(line, string.Empty); // remove Point values
+            plane.TextureName = NumericReg.Replace(textureName, string.Empty); // remove additional numeric values
+            
             return plane;
         }
     }
