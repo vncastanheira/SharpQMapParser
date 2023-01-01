@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using SharpQMapParser.Core;
 
@@ -8,14 +9,15 @@ namespace SharpQMapParser
 {
     public class Map
     {
-        const string NUMERIC_REGEX_STR = @"\s-?\d+[\.*\d+]*";               // matches all numbers
-        const string POINTS_REGEX_STR = @"\(\s-?\d+\s-?\d+\s-?\d+\s\)";     // matches all Point values
+        const string NUMERIC_REGEX_STR = @"-?\d+[\.*\d+]*";                 // matches all numbers
+        const string POINTS_REGEX_STR = @"\(\s-?\d+\s-?\d+\s-?\d+\s\)";     // matches all Point values with parentheses
+        const string QUOTED_NAME_PATTERN = @"""(.*?)""";                    // matching texture names with quotation
+        const string STANDARD_NAME_PATTERN = @"^(.*?)\s";                    // matching texture names without space character
 
         public List<Entity> Entities = new List<Entity>();
-        public MapFormat MapFormat;
+        public MapFormat MapFormat = MapFormat.Standard;
 
-
-        private Regex NumericReg { get; }  
+        private Regex NumericReg { get; }
         private Regex PointsReg { get; }
         private int _lineNumber = 0;
 
@@ -25,7 +27,7 @@ namespace SharpQMapParser
             PointsReg = new Regex(POINTS_REGEX_STR);
         }
 
-        public void Parse(StreamReader textStream, MapFormat mapFormat = MapFormat.Standard)
+        public void Parse(StreamReader textStream)
         {
             Entity currentEntity = null;
             Brush currentBrush = null;
@@ -71,7 +73,7 @@ namespace SharpQMapParser
                                 currentEntity.ClassName = value;
                                 break;
                             case "mapversion":
-                                mapFormat = value == "220" ? MapFormat.Valve : MapFormat.Standard;
+                                MapFormat = value == "220" ? MapFormat.Valve : MapFormat.Standard;
                                 break;
                             case "origin":
                                 try
@@ -99,16 +101,23 @@ namespace SharpQMapParser
 
                 if (line.StartsWith("(")) // read brush
                 {
-                    switch (MapFormat)
+                    try
                     {
-                        case MapFormat.Standard:
-                            var plane = ParseStandardFormat(line);
-                            currentBrush.Planes.Add(plane);
-                            break;
-                        case MapFormat.Valve:
-                            break;
-                        default:
-                            break;
+                        switch (MapFormat)
+                        {
+                            case MapFormat.Standard:
+                                var plane = ParseStandardFormat(line);
+                                currentBrush.Planes.Add(plane);
+                                break;
+                            case MapFormat.Valve:
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new MapParsingException(string.Format(Resource.ExceptionMessageCorruptMapFile, _lineNumber), ex);
                     }
                 }
 
@@ -143,51 +152,36 @@ namespace SharpQMapParser
         {
             var plane = new Plane();
 
-            // Match numeric values
+            // Match Point values
+            var pointsCollection = PointsReg.Matches(line);
 
-            var matchCollection = NumericReg.Matches(line);
-
-            if (matchCollection.Count == 14)
+            // Load points
+            for (int i = 0; i < pointsCollection.Count; i++)
             {
-                try
-                {
-                    // Load Points 
-                    var x1 = int.Parse(matchCollection[0].Value);
-                    var y1 = int.Parse(matchCollection[1].Value);
-                    var z1 = int.Parse(matchCollection[2].Value);
-                    plane.Points[0] = new Point(x1, y1, z1);
-
-                    var x2 = int.Parse(matchCollection[3].Value);
-                    var y2 = int.Parse(matchCollection[4].Value);
-                    var z2 = int.Parse(matchCollection[5].Value);
-                    plane.Points[1] = new Point(x2, y2, z2);
-
-                    var x3 = int.Parse(matchCollection[6].Value);
-                    var y3 = int.Parse(matchCollection[7].Value);
-                    var z3 = int.Parse(matchCollection[8].Value);
-                    plane.Points[2] = new Point(x3, y3, z3);
-
-                    // Load offset, rotation and scale
-                    plane.XOff = int.Parse(matchCollection[9].Value);
-                    plane.YOff = int.Parse(matchCollection[10].Value);
-                    plane.Rotation = int.Parse(matchCollection[11].Value);
-                    plane.XScale = float.Parse(matchCollection[11].Value);
-                    plane.YScale = float.Parse(matchCollection[12].Value);
-                }
-                catch (Exception)
-                {
-                    throw new MapParsingException(string.Format(Resource.ExceptionMessageCorruptMapFile, _lineNumber));
-                }
+                var match = pointsCollection[i];
+                var axis = NumericReg.Matches(match.Value);
+                var x = int.Parse(axis[0].Value);
+                var y = int.Parse(axis[1].Value);
+                var z = int.Parse(axis[2].Value);
+                plane.Points[i] = new Point(x, y, z);
             }
-            else
-            {
-                throw new MapParsingException($"Incorrect numeric values count on line {_lineNumber}");
-            }
-            
-            // Load texture
-            var textureName = PointsReg.Replace(line, string.Empty); // remove Point values
-            plane.TextureName = NumericReg.Replace(textureName, string.Empty); // remove additional numeric values
-            
+
+            var parsingString = PointsReg.Replace(line, string.Empty).TrimStart();
+
+            // Load texture name            
+            var pattern = parsingString.StartsWith("\"") ? QUOTED_NAME_PATTERN : STANDARD_NAME_PATTERN;
+            var results = Regex.Split(parsingString, pattern).Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            plane.TextureName = results[0];
+            parsingString = results[1];
+
+            // Load offset, rotation and scale
+            var textureProperties = NumericReg.Matches(parsingString);
+            plane.XOff = int.Parse(textureProperties[0].Value);
+            plane.YOff = int.Parse(textureProperties[1].Value);
+            plane.Rotation = int.Parse(textureProperties[2].Value);
+            plane.XScale = float.Parse(textureProperties[3].Value);
+            plane.YScale = float.Parse(textureProperties[4].Value);
+
             return plane;
         }
     }
