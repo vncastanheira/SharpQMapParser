@@ -10,7 +10,7 @@ namespace SharpQMapParser
     public class Map
     {
         const string NUMERIC_REGEX_STR = @"-?\d+[\.*\d+]*";                 // matches all numbers
-        const string POINTS_REGEX_STR = @"\(\s-?\d+\s-?\d+\s-?\d+\s\)";     // matches all Point values with parentheses
+        const string POINTS_REGEX_STR = @"\(\s(-?\d*.?\d*)\s(-?\d*.?\d*)\s(-?\d*.?\d*\s)\)";     // matches all Point values with parentheses
         const string QUOTED_NAME_PATTERN = @"""(.*?)""";                    // matching texture names with quotation
         const string STANDARD_NAME_PATTERN = @"^(.*?)\s";                    // matching texture names without space character
 
@@ -72,14 +72,14 @@ namespace SharpQMapParser
                             case "classname":
                                 currentEntity.ClassName = value;
                                 break;
-                            case "mapversion":
-                                MapFormat = value == "220" ? MapFormat.Valve : MapFormat.Standard;
-                                break;
+                            //case "mapversion":
+                            //    MapFormat = value == "220" ? MapFormat.Valve : MapFormat.Standard;
+                            //    break;
                             case "origin":
                                 try
                                 {
-                                    var coord = value.Split();
-                                    var point = new Point(int.Parse(coord[0]), int.Parse(coord[1]), int.Parse(coord[2]));
+                                    var coords = Regex.Matches(value, NUMERIC_REGEX_STR).Select(m => m.Value).ToArray();
+                                    var point = new Point(float.Parse(coords[0]), float.Parse(coords[1]), float.Parse(coords[2]));
                                     currentEntity.Origin = point;
                                     break;
                                 }
@@ -139,13 +139,9 @@ namespace SharpQMapParser
 
         void ReadEntityProperty(string line, out string key, out string value)
         {
-            var regex = new Regex(@"("")\s("")");
-            var result = regex.Split(line);
-            if (result.Length != 4)
-                throw new MapParsingException(Resource.ExceptionMessageInvalidEntityProperty);
-
-            key = result[0].Replace("\"", string.Empty);
-            value = result[3].Replace("\"", string.Empty);
+            var result = Regex.Matches(line, @""".*?""");
+            key = result[0].Value.Replace("\"", string.Empty);
+            value = result[1].Value.Replace("\"", string.Empty);
         }
 
         Plane ParseStandardFormat(string line)
@@ -155,14 +151,17 @@ namespace SharpQMapParser
             // Match Point values
             var pointsCollection = PointsReg.Matches(line);
 
+            if (pointsCollection.Count != 3)
+                throw new MapParsingException(string.Format(Resource.ExceptionMessageErrorParsingPoint, _lineNumber));
+
             // Load points
             for (int i = 0; i < pointsCollection.Count; i++)
             {
                 var match = pointsCollection[i];
                 var axis = NumericReg.Matches(match.Value);
-                var x = int.Parse(axis[0].Value);
-                var y = int.Parse(axis[1].Value);
-                var z = int.Parse(axis[2].Value);
+                var x = float.Parse(axis[0].Value);
+                var y = float.Parse(axis[1].Value);
+                var z = float.Parse(axis[2].Value);
                 plane.Points[i] = new Point(x, y, z);
             }
 
@@ -176,9 +175,9 @@ namespace SharpQMapParser
 
             // Load offset, rotation and scale
             var textureProperties = NumericReg.Matches(parsingString);
-            plane.XOff = int.Parse(textureProperties[0].Value);
-            plane.YOff = int.Parse(textureProperties[1].Value);
-            plane.Rotation = int.Parse(textureProperties[2].Value);
+            plane.XOff = float.Parse(textureProperties[0].Value);
+            plane.YOff = float.Parse(textureProperties[1].Value);
+            plane.Rotation = float.Parse(textureProperties[2].Value);
             plane.XScale = float.Parse(textureProperties[3].Value);
             plane.YScale = float.Parse(textureProperties[4].Value);
 

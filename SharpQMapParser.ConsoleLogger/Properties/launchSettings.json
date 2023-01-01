@@ -2,7 +2,7 @@
   "profiles": {
     "SharpQMapParser.ConsoleLogger": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Projects\\SharpQMapParser\\SharpQMapParser.Test\\Maps\\Standard\\E1M1.MAP"
+      "commandLineArgs": "\"D:\\Downloads\\ter_shibboleth\\shib5-quake.map\""
     }
   }
 }
