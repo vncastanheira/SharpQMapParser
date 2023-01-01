@@ -14,17 +14,18 @@ namespace SharpQMapParser
         const string QUOTED_NAME_PATTERN = @"""(.*?)""";                    // matching texture names with quotation
         const string STANDARD_NAME_PATTERN = @"^(.*?)\s";                    // matching texture names without space character
 
+        private Regex NumericReg { get; }
+        private Regex PointsReg { get; }
+
         public List<Entity> Entities = new List<Entity>();
         public MapFormat MapFormat = MapFormat.Standard;
 
-        private Regex NumericReg { get; }
-        private Regex PointsReg { get; }
         private int _lineNumber = 0;
 
         public Map()
         {
-            NumericReg = new Regex(NUMERIC_REGEX_STR);
-            PointsReg = new Regex(POINTS_REGEX_STR);
+            NumericReg = new Regex(NUMERIC_REGEX_STR, RegexOptions.Compiled);
+            PointsReg = new Regex(POINTS_REGEX_STR, RegexOptions.Compiled);
         }
 
         public void Parse(StreamReader textStream)
