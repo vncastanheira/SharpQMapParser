@@ -9,13 +9,17 @@ namespace SharpQMapParser
 {
     public class Map
     {
-        const string NUMERIC_REGEX_STR = @"-?\d+[\.*\d+]*";                 // matches all numbers
-        const string POINTS_REGEX_STR = @"\(\s(-?\d*.?\d*)\s(-?\d*.?\d*)\s(-?\d*.?\d*\s)\)";     // matches all Point values with parentheses
-        const string QUOTED_NAME_PATTERN = @"""(.*?)""";                    // matching texture names with quotation
-        const string STANDARD_NAME_PATTERN = @"^(.*?)\s";                    // matching texture names without space character
+        const string NUMERIC_REGEX_STR = @"-?\d+[\.*\d+]*";                                     // matches all numbers
+        const string POINTS_REGEX_STR = @"\(\s(-?\d*.?\d*)\s(-?\d*.?\d*)\s(-?\d*.?\d*\s)\)";    // matches all Point values with parentheses
+        const string QUOTED_TEXT_PATTERN = @"""(.*?)""";                                        // matching texture names with quotation
+        const string STANDARD_TEXNAME_PATTERN = @"^(.*?)\s";                                       // matching texture names without space character
 
+        #region Compiled Regex
         private Regex NumericReg { get; }
         private Regex PointsReg { get; }
+        private Regex QuotedTextRegex { get; }
+        private Regex StandardTexNameRegex { get; }
+        #endregion
 
         public List<Entity> Entities = new List<Entity>();
         public MapFormat MapFormat = MapFormat.Standard;
@@ -26,6 +30,8 @@ namespace SharpQMapParser
         {
             NumericReg = new Regex(NUMERIC_REGEX_STR, RegexOptions.Compiled);
             PointsReg = new Regex(POINTS_REGEX_STR, RegexOptions.Compiled);
+            QuotedTextRegex = new Regex(QUOTED_TEXT_PATTERN, RegexOptions.Compiled);
+            StandardTexNameRegex = new Regex(STANDARD_TEXNAME_PATTERN, RegexOptions.Compiled);
         }
 
         public void Parse(StreamReader textStream)
@@ -169,8 +175,8 @@ namespace SharpQMapParser
             var parsingString = PointsReg.Replace(line, string.Empty).TrimStart();
 
             // Load texture name            
-            var pattern = parsingString.StartsWith("\"") ? QUOTED_NAME_PATTERN : STANDARD_NAME_PATTERN;
-            var results = Regex.Split(parsingString, pattern).Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            var texRegex = parsingString.StartsWith("\"") ? QuotedTextRegex : StandardTexNameRegex;
+            var results = texRegex.Split(parsingString).Where(s => !string.IsNullOrEmpty(s)).ToArray();
             plane.TextureName = results[0];
             parsingString = results[1];
 
