@@ -6,7 +6,7 @@ namespace SharpQMapParser.Renderer
 {
     public static class MeshGenerator
     {
-        public static List<Mesh> GenerateMeshes(Map map)
+        public static Mesh GenerateMeshes(Map map)
         {
             var worldspawn = map.Entities.Find(e => e.ClassName == "worldspawn");
             if (worldspawn != null)
@@ -18,11 +18,11 @@ namespace SharpQMapParser.Renderer
                     {
                         GetPointVectorsAndNormal(brush.Planes[i], out float d_i, out Vector3 normal_i);
 
-                        for (int j = i+1; j < brush.Planes.Count; j++)
+                        for (int j = i + 1; j < brush.Planes.Count; j++)
                         {
                             GetPointVectorsAndNormal(brush.Planes[j], out float d_j, out Vector3 normal_j);
 
-                            for (int k = j+1; k < brush.Planes.Count; k++)
+                            for (int k = j + 1; k < brush.Planes.Count; k++)
                             {
                                 GetPointVectorsAndNormal(brush.Planes[k], out float d_k, out Vector3 normal_k);
 
@@ -30,12 +30,12 @@ namespace SharpQMapParser.Renderer
                                 var nKnI = Vector3.Cross(normal_k, normal_i);
                                 var nInJ = Vector3.Cross(normal_i, normal_j);
 
-                                if(nJnK.LengthSquared() > 0.0001f &&
+                                if (nJnK.LengthSquared() > 0.0001f &&
                                    nKnI.LengthSquared() > 0.0001f &&
                                    nKnI.LengthSquared() > 0.0001f)
                                 {
                                     var quotient = Vector3.Dot(normal_i, nJnK);
-                                    if(Math.Abs(quotient) > 0.0001f)
+                                    if (Math.Abs(quotient) > 0.0001f)
                                     {
                                         quotient = -1 / quotient;
                                         nJnK *= d_i;
@@ -46,11 +46,11 @@ namespace SharpQMapParser.Renderer
                                         potentialVertex += nInJ;
                                         potentialVertex *= quotient;
 
-                                            allVertices.Add(potentialVertex);
+                                        allVertices.Add(potentialVertex);
                                         //check if inside, and replace supportingVertexOut if needed
-                                        if (IsPointInsidePlanes(brush.Planes, potentialVertex, 0.01f))
-                                        {
-                                        }
+                                        //if (IsPointInsidePlanes(brush.Planes, potentialVertex, 0.01f))
+                                        //{
+                                        //}
                                     }
 
                                 }
@@ -105,70 +105,48 @@ namespace SharpQMapParser.Renderer
             return true;
         }
 
-        static List<Mesh> GenMeshes(List<Vector3> allVertices)
+        static Mesh GenMeshes(List<Vector3> allVertices)
         {
-            List<Mesh> meshes = new List<Mesh>();
+            Mesh newMesh = new Mesh();
 
-            for (int i = 0; i < allVertices.Count; i += 3)
+            newMesh.vertexCount = allVertices.Count;
+            unsafe
             {
-                var verticesList = allVertices.Skip(i).Take(3).ToList();
-                if (verticesList.Count < 3)
-                    continue;
+                // Vertices
+                newMesh.vertices = (float*)Raylib.MemAlloc(sizeof(float) * allVertices.Count * 3);
 
-                Mesh newMesh = new Mesh();
-                newMesh.triangleCount = 1;
-                newMesh.vertexCount = 3;
-                unsafe
+                // Normals
+                newMesh.normals = (float*)Raylib.MemAlloc(sizeof(float) * allVertices.Count * 3);
+
+                for (int i = 0; i < allVertices.Count; i++)
                 {
+                    newMesh.vertices[i * 3] = allVertices[i].X;
+                    newMesh.vertices[(i * 3) + 1] = allVertices[i].Y;
+                    newMesh.vertices[(i * 3) + 2] = allVertices[i].Z;
 
-                    // Vertices
-                    newMesh.vertices = (float*)Raylib.MemAlloc(sizeof(float) * 9);
-
-                    newMesh.vertices[0] = verticesList[0].X;
-                    newMesh.vertices[1] = verticesList[0].Y;
-                    newMesh.vertices[2] = verticesList[0].Z;
-
-                    newMesh.vertices[3] = verticesList[1].X;
-                    newMesh.vertices[4] = verticesList[1].Y;
-                    newMesh.vertices[5] = verticesList[1].Z;
-
-                    newMesh.vertices[6] = verticesList[2].X;
-                    newMesh.vertices[7] = verticesList[2].Y;
-                    newMesh.vertices[8] = verticesList[2].Z;
-
-                    // Normals
-                    newMesh.normals = (float*)Raylib.MemAlloc(sizeof(float) * 9);
-
-                    var normal = Poly.Normal(verticesList[0], verticesList[1], verticesList[2]);
-
-                    newMesh.normals[0] = normal.X;
-                    newMesh.normals[1] = normal.Y;
-                    newMesh.normals[2] = normal.Z;
-                    newMesh.normals[3] = normal.X;
-                    newMesh.normals[4] = normal.Y;
-                    newMesh.normals[5] = normal.Z;
-                    newMesh.normals[6] = normal.X;
-                    newMesh.normals[7] = normal.Y;
-                    newMesh.normals[8] = normal.Z;
-
-                    // Tex Coords
-                    newMesh.texcoords = (float*)Raylib.MemAlloc(sizeof(float) * 6);
-
-                    newMesh.texcoords[0] = 0;
-                    newMesh.texcoords[1] = 0;
-                    newMesh.texcoords[2] = 0.5f;
-                    newMesh.texcoords[3] = 1.0f;
-                    newMesh.texcoords[4] = -1;
-                    newMesh.texcoords[5] = 0;
-
-                    Raylib.UploadMesh(&newMesh, false);
+                    var normal = Vector3.Normalize(allVertices[i]);
+                    newMesh.normals[(i * 3)] = normal.X;
+                    newMesh.normals[(i * 3) + 1] = normal.Y;
+                    newMesh.normals[(i * 3) + 2] = normal.Z;
                 }
 
-                meshes.Add(newMesh);
+                // Tex Coords
+                //newMesh.texcoords = (float*)Raylib.MemAlloc(sizeof(float) * 12);
+
+                //newMesh.texcoords[0] = 0;
+                //newMesh.texcoords[1] = 0;
+                //newMesh.texcoords[2] = 0.5f;
+                //newMesh.texcoords[3] = 1.0f;
+                //newMesh.texcoords[4] = -1;
+                //newMesh.texcoords[5] = 0;
+
+                Raylib.UploadMesh(&newMesh, false);
+
             }
+            newMesh.triangleCount = 12; // ??
 
-            return meshes;
+            return newMesh;
+
         }
-
     }
 }
