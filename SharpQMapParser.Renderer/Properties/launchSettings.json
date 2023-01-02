@@ -2,7 +2,7 @@
   "profiles": {
     "SharpQMapParser.Renderer": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\Vinyl Hunger\\Maps\\church-quake.map\""
+      "commandLineArgs": "\"D:\\Projects\\SharpQMapParser\\SharpQMapParser.Test\\Maps\\Standard\\Trenchbroom.map\""
     }
   }
 }

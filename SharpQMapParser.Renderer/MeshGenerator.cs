@@ -11,63 +11,55 @@ namespace SharpQMapParser.Renderer
             var worldspawn = map.Entities.Find(e => e.ClassName == "worldspawn");
             if (worldspawn != null)
             {
-                var polygons = new List<Poly>();
+                List<Vector3> allVertices = new List<Vector3>();
                 foreach (var brush in worldspawn.Brushes)
                 {
-                    Vector3 brushMins = new Vector3(float.MinValue, float.MinValue, float.MinValue);
-                    Vector3 brushMax = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-
-                    for (int i = 0; i < brush.Planes.Count - 3; i++)
+                    for (int i = 0; i < brush.Planes.Count; i++)
                     {
-                        var polyA = new Poly();
+                        GetPointVectorsAndNormal(brush.Planes[i], out float d_i, out Vector3 normal_i);
 
-                        for (int j = 0; j < brush.Planes.Count - 2; j++)
+                        for (int j = i+1; j < brush.Planes.Count; j++)
                         {
-                            var polyB = new Poly();
+                            GetPointVectorsAndNormal(brush.Planes[j], out float d_j, out Vector3 normal_j);
 
-                            for (int k = 0; k < brush.Planes.Count - 1; k++)
+                            for (int k = j+1; k < brush.Planes.Count; k++)
                             {
-                                var polyC = new Poly();
+                                GetPointVectorsAndNormal(brush.Planes[k], out float d_k, out Vector3 normal_k);
 
-                                if (i != j && i != k && j != k)
+                                var nJnK = Vector3.Cross(normal_j, normal_k);
+                                var nKnI = Vector3.Cross(normal_k, normal_i);
+                                var nInJ = Vector3.Cross(normal_i, normal_j);
+
+                                if(nJnK.LengthSquared() > 0.0001f &&
+                                   nKnI.LengthSquared() > 0.0001f &&
+                                   nKnI.LengthSquared() > 0.0001f)
                                 {
-
-                                    GetPointVectorsAndNormal(brush.Planes[i], out float d1, out Vector3 normal_1);
-                                    GetPointVectorsAndNormal(brush.Planes[j], out float d2, out Vector3 normal_2);
-                                    GetPointVectorsAndNormal(brush.Planes[k], out float d3, out Vector3 normal_3);
-
-                                    bool legal = true;
-                                    GetIntersection(normal_1, normal_2, normal_3, d1, d2, d3, out Vector3 newVertex);
-
-                                    //for (int m = 0; m < brush.Planes.Count - 1; m++)
-                                    //{
-                                    //    GetPointVectorsAndNormal(brush.Planes[m], out float mDist, out Vector3 mNormal);
-                                    //    if (Vector3.Dot(mNormal, newVertex) + mDist > 0)
-                                    //        legal = false;
-                                    //}
-
-                                    if (legal)
+                                    var quotient = Vector3.Dot(normal_i, nJnK);
+                                    if(Math.Abs(quotient) > 0.0001f)
                                     {
-                                        polyA.Vertices.Add(newVertex);
-                                        polyB.Vertices.Add(newVertex);
-                                        polyC.Vertices.Add(newVertex);
+                                        quotient = -1 / quotient;
+                                        nJnK *= d_i;
+                                        nKnI *= d_j;
+                                        nInJ *= d_k;
+                                        var potentialVertex = nJnK;
+                                        potentialVertex += nKnI;
+                                        potentialVertex += nInJ;
+                                        potentialVertex *= quotient;
+
+                                            allVertices.Add(potentialVertex);
+                                        //check if inside, and replace supportingVertexOut if needed
+                                        if (IsPointInsidePlanes(brush.Planes, potentialVertex, 0.01f))
+                                        {
+                                        }
                                     }
+
                                 }
-
-                                if (polyC.Vertices.Count > 0)
-                                    polygons.Add(polyC);
                             }
-
-                            if (polyB.Vertices.Count > 0)
-                                polygons.Add(polyB);
                         }
-
-                        if (polyA.Vertices.Count > 0)
-                            polygons.Add(polyA);
                     }
                 }
 
-                return GenMeshes(polygons);
+                return GenMeshes(allVertices);
             }
             else
             {
@@ -75,18 +67,29 @@ namespace SharpQMapParser.Renderer
             }
         }
 
+        private static bool IsPointInsidePlanes(List<Core.Plane> planes, Vector3 potentialVertex, float margin)
+        {
+            for (int i = 0; i < planes.Count; i++)
+            {
+                GetPointVectorsAndNormal(planes[i], out float dist, out Vector3 normal);
+                if ((Vector3.Dot(normal, potentialVertex) + dist) > 0)
+                    return false;
+            }
+            return true;
+        }
+
         static void GetPointVectorsAndNormal(Core.Plane plane, out float distance, out Vector3 normal)
         {
             Point[] points = plane.Points;
             normal = Vector3.Zero;
 
-            Vector3 v0 = new Vector3(points[0].x, points[0].y, points[0].z);
-            Vector3 v1 = new Vector3(points[1].x, points[1].y, points[1].z);
-            Vector3 v2 = new Vector3(points[2].x, points[2].y, points[2].z);
+            Vector3 v1 = new Vector3(points[0].x, points[0].y, points[0].z);
+            Vector3 v2 = new Vector3(points[1].x, points[1].y, points[1].z);
+            Vector3 v3 = new Vector3(points[2].x, points[2].y, points[2].z);
 
-            var dir = Vector3.Cross((v1 - v0), (v2 - v0));
+            var dir = Vector3.Cross((v2 - v1), (v3 - v1));
             normal = Vector3.Normalize(dir);
-            distance = Math.Abs(Vector3.Dot(normal, v0));
+            distance = Math.Abs(Vector3.Dot(normal, v1));
         }
 
         static bool GetIntersection(Vector3 normal_1, Vector3 normal_2, Vector3 normal_3, float d1, float d2, float d3, out Vector3 point)
@@ -102,10 +105,9 @@ namespace SharpQMapParser.Renderer
             return true;
         }
 
-        static List<Mesh> GenMeshes(List<Poly> polygons)
+        static List<Mesh> GenMeshes(List<Vector3> allVertices)
         {
             List<Mesh> meshes = new List<Mesh>();
-            List<Vector3> allVertices = polygons.SelectMany(p => p.Vertices).ToList();
 
             for (int i = 0; i < allVertices.Count; i += 3)
             {
@@ -120,8 +122,7 @@ namespace SharpQMapParser.Renderer
                 {
 
                     // Vertices
-                    fixed (float* vertices = new float[9])
-                        newMesh.vertices = vertices;
+                    newMesh.vertices = (float*)Raylib.MemAlloc(sizeof(float) * 9);
 
                     newMesh.vertices[0] = verticesList[0].X;
                     newMesh.vertices[1] = verticesList[0].Y;
@@ -136,8 +137,7 @@ namespace SharpQMapParser.Renderer
                     newMesh.vertices[8] = verticesList[2].Z;
 
                     // Normals
-                    fixed(float* normals = new float[9])
-                        newMesh.normals = normals;
+                    newMesh.normals = (float*)Raylib.MemAlloc(sizeof(float) * 9);
 
                     var normal = Poly.Normal(verticesList[0], verticesList[1], verticesList[2]);
 
@@ -152,8 +152,7 @@ namespace SharpQMapParser.Renderer
                     newMesh.normals[8] = normal.Z;
 
                     // Tex Coords
-                    fixed (float* texcoords = new float[6])
-                        newMesh.texcoords = texcoords;
+                    newMesh.texcoords = (float*)Raylib.MemAlloc(sizeof(float) * 6);
 
                     newMesh.texcoords[0] = 0;
                     newMesh.texcoords[1] = 0;
@@ -170,5 +169,6 @@ namespace SharpQMapParser.Renderer
 
             return meshes;
         }
+
     }
 }

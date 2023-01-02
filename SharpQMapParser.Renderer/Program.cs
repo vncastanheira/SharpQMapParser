@@ -15,7 +15,7 @@ Raylib.InitWindow(800, 480, "Hello World");
 Raylib.SetConfigFlags(ConfigFlags.FLAG_VSYNC_HINT | ConfigFlags.FLAG_MSAA_4X_HINT);
 Raylib.SetExitKey(KeyboardKey.KEY_ESCAPE);
 
-float cameraDistance = 10;
+float cameraDistance = 300;
 
 Camera3D camera = new Camera3D
 {
@@ -74,23 +74,23 @@ while (!Raylib.WindowShouldClose())
     Raylib.BeginDrawing();
     Raylib.ClearBackground(Color.DARKBLUE);
 
-    //Raylib.DrawText($"Camera Position: {CameraPosition}", 0, 0, 20, Color.WHITE);
-
     Raylib.BeginMode3D(camera);
 
     Raylib.DrawGrid(10, 1.0f);
 
     var translation = Matrix4x4.CreateTranslation(Vector3.Zero);
     var yRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, modelsRotationY);
-    var xRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, modelsRotationX);
     for (int i = 0; i < models.Count; i++)
     {
         var model = models[i];
-        model.transform = Matrix4x4.Transform(translation, yRotation * xRotation);
+        model.transform = Matrix4x4.Transform(translation, yRotation);
         Raylib.DrawModel(models[i], Vector3.Zero, 1f, Color.WHITE);
     }
 
     Raylib.EndMode3D();
+
+    Raylib.DrawText($"Camera Position: {camera.position}", 0, 0, 20, Color.WHITE);
+
     Raylib.EndDrawing();
 }
 
@@ -98,4 +98,5 @@ for (int i = 0; i < models.Count; i++)
 {
     Raylib.UnloadModel(models[i]);
 }
+
 Raylib.CloseWindow();
