@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "SharpQMapParser.ConsoleLogger": {
+    "SharpQMapParser.Renderer": {
       "commandName": "Project",
       "commandLineArgs": "\"D:\\Vinyl Hunger\\Maps\\church-quake.map\""
     }
