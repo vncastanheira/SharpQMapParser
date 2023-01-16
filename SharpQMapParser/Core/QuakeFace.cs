@@ -1,10 +1,12 @@
-﻿using System.Dynamic;
+﻿using System.Numerics;
 
 namespace SharpQMapParser.Core
 {
-    public class Plane
+    public class QuakeFace
     {
-        public Point[] Points = new Point[3];
+        public Plane Plane = new Plane();
+        [System.Obsolete("Replace with PLane")]
+        public Vector3[] Points = new Vector3[3];
         public string TextureName = string.Empty;
         public float XOff, YOff;
         public float Rotation;

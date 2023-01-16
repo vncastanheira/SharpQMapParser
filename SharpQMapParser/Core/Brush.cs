@@ -4,6 +4,6 @@ namespace SharpQMapParser.Core
 {
     public class Brush
     {
-        public List<Plane> Planes = new List<Plane>(6);
+        public List<QuakeFace> Planes = new List<QuakeFace>(6);
     }
 }

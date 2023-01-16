@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Numerics = System.Numerics;
 using System.Text.RegularExpressions;
 using SharpQMapParser.Core;
+using System.Numerics;
 
 namespace SharpQMapParser
 {
@@ -36,8 +38,8 @@ namespace SharpQMapParser
 
         public void Parse(StreamReader textStream)
         {
-            Entity currentEntity = null;
-            Brush currentBrush = null;
+            Entity? currentEntity = null;
+            Brush? currentBrush = null;
 
             string rawLine;
             _lineNumber = 0;
@@ -86,7 +88,7 @@ namespace SharpQMapParser
                                 try
                                 {
                                     var coords = Regex.Matches(value, NUMERIC_REGEX_STR).Select(m => m.Value).ToArray();
-                                    var point = new Point(float.Parse(coords[0]), float.Parse(coords[1]), float.Parse(coords[2]));
+                                    var point = new Numerics.Vector3(float.Parse(coords[0]), float.Parse(coords[1]), float.Parse(coords[2]));
                                     currentEntity.Origin = point;
                                     break;
                                 }
@@ -151,15 +153,17 @@ namespace SharpQMapParser
             value = result[1].Value.Replace("\"", string.Empty);
         }
 
-        Plane ParseStandardFormat(string line)
+        QuakeFace ParseStandardFormat(string line)
         {
-            var plane = new Plane();
+            var quakeFace = new QuakeFace();
 
             // Match Point values
             var pointsCollection = PointsReg.Matches(line);
 
             if (pointsCollection.Count != 3)
                 throw new MapParsingException(string.Format(Resource.ExceptionMessageErrorParsingPoint, _lineNumber));
+
+            Vector3[] parsedPoints = new Vector3[3];
 
             // Load points
             for (int i = 0; i < pointsCollection.Count; i++)
@@ -169,26 +173,28 @@ namespace SharpQMapParser
                 var x = float.Parse(axis[0].Value);
                 var y = float.Parse(axis[1].Value);
                 var z = float.Parse(axis[2].Value);
-                plane.Points[i] = new Point(x, y, z);
+                parsedPoints[i] = new Vector3(x, y, z);
             }
+
+            quakeFace.Plane = Plane.CreateFromVertices(parsedPoints[0], parsedPoints[1], parsedPoints[2]);
 
             var parsingString = PointsReg.Replace(line, string.Empty).TrimStart();
 
             // Load texture name            
             var texRegex = parsingString.StartsWith("\"") ? QuotedTextRegex : StandardTexNameRegex;
             var results = texRegex.Split(parsingString).Where(s => !string.IsNullOrEmpty(s)).ToArray();
-            plane.TextureName = results[0];
+            quakeFace.TextureName = results[0];
             parsingString = results[1];
 
             // Load offset, rotation and scale
             var textureProperties = NumericReg.Matches(parsingString);
-            plane.XOff = float.Parse(textureProperties[0].Value);
-            plane.YOff = float.Parse(textureProperties[1].Value);
-            plane.Rotation = float.Parse(textureProperties[2].Value);
-            plane.XScale = float.Parse(textureProperties[3].Value);
-            plane.YScale = float.Parse(textureProperties[4].Value);
+            quakeFace.XOff = float.Parse(textureProperties[0].Value);
+            quakeFace.YOff = float.Parse(textureProperties[1].Value);
+            quakeFace.Rotation = float.Parse(textureProperties[2].Value);
+            quakeFace.XScale = float.Parse(textureProperties[3].Value);
+            quakeFace.YScale = float.Parse(textureProperties[4].Value);
 
-            return plane;
+            return quakeFace;
         }
     }
 

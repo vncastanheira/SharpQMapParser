@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Numerics;
 
 namespace SharpQMapParser.Core
 {
@@ -12,7 +13,7 @@ namespace SharpQMapParser.Core
         /// <summary>
         /// For entities that are not the world
         /// </summary>
-        public Point Origin;
+        public Vector3 Origin;
 
         /// <summary>
         /// worldspawn entity
