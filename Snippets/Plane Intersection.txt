@@ -1,0 +1,33 @@
+Here is an example of the PlaneIntersection method that could be used in the previous algorithm:
+
+
+class Plane {
+    public Vector3 normal;
+    public float distance;
+
+    public bool PlaneIntersection(out Vector3 intersection, Plane plane1, Plane plane2) {
+        // Compute the direction of the intersection line
+        Vector3 direction = Vector3.Cross(plane1.normal, plane2.normal);
+
+        // If the direction is zero, the planes are parallel and do not intersect
+        if (direction.sqrMagnitude < float.Epsilon) {
+            intersection = Vector3.zero;
+            return false;
+        }
+
+        // Compute the point of intersection
+        intersection = Vector3.zero;
+        float dot = Vector3.Dot(plane2.normal, direction);
+        if (Math.Abs(dot) > float.Epsilon) {
+            Vector3 c1 = plane1.normal * -plane1.distance;
+            Vector3 c2 = plane2.normal * -plane2.distance;
+            Vector3 c3 = Vector3.Cross(plane1.normal, plane2.normal);
+            intersection = (Vector3.Cross(c2, c3) + Vector3.Cross(c1, plane2.normal)) / dot;
+        }
+
+        return true;
+    }
+}
+This method takes two planes as input and computes the direction and point of intersection between them. It returns a Boolean value indicating whether the planes intersect or not, and the point of intersection is returned as an output variable. It uses Vector3 class for cross product, dot product, and magnitude computation.
+
+Please note that this method is based on the mathematical calculation of the intersection of two planes, it can be affected by precision errors caused by floating point operations, it's important to keep this in mind when working with large numbers or high precision scenarios.

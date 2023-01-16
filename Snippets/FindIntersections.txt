@@ -1,0 +1,50 @@
+Here is an example algorithm that finds the intersection between n planes and stores the resulting vertices in C#:
+
+===================================================================================================
+
+using System.Collections.Generic;
+
+class IntersectionFinder {
+    public static List<Vector3> FindIntersections(List<Plane> planes) {
+        List<Vector3> intersections = new List<Vector3>();
+
+        // Iterate through all pairs of planes
+        for (int i = 0; i < planes.Count - 1; i++) {
+            for (int j = i + 1; j < planes.Count; j++) {
+                // Find the intersection of the two planes
+                Vector3 intersection = Vector3.zero;
+                bool foundIntersection = Plane.PlaneIntersection(
+                    out intersection,
+                    planes[i],
+                    planes[j]
+                );
+
+                // Check if the intersection is valid
+                if (foundIntersection) {
+                    // Check if the intersection is within the boundaries of all other planes
+                    bool validIntersection = true;
+                    for (int k = 0; k < planes.Count; k++) {
+                        if (k == i || k == j) continue;
+                        if (!planes[k].GetSide(intersection)) {
+                            validIntersection = false;
+                            break;
+                        }
+                    }
+
+                    // If the intersection is valid, add it to the list of intersections
+                    if (validIntersection) {
+                        intersections.Add(intersection);
+                    }
+                }
+            }
+        }
+
+        return intersections;
+    }
+}
+
+===================================================================================================
+
+This algorithm assumes the existence of a Vector3 class for representing 3D points and a Plane class that contains a method named PlaneIntersection that finds the intersection between two planes. Also, the Plane class should have a method named GetSide that return true if a point is within the boundaries of the plane. This is just a simple example, it's possible that in a real scenario you will find additional complexities such as missing planes, non-planar intersections, etc.
+
+Please note that this algorithm has a time complexity of O(n^2) because it checks all possible pairs of planes, which may not be efficient if you have a large number of planes. Consider using more efficient algorithm such as finding all the intersections using linear algebra methods if you have a large number of planes.

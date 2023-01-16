@@ -1,0 +1,29 @@
+Here is an example of an algorithm that finds the normal of a plane given three vertex points in C#:
+
+
+class Plane {
+    public Vector3 vertex1;
+    public Vector3 vertex2;
+    public Vector3 vertex3;
+    public Vector3 normal;
+
+    public void ComputeNormal() {
+        // Compute the two vectors that define the plane
+        Vector3 v1 = vertex2 - vertex1;
+        Vector3 v2 = vertex3 - vertex1;
+
+        // Compute the normal of the plane
+        normal = Vector3.Cross(v1, v2).normalized;
+    }
+}
+This algorithm uses the Cross product and the difference between two points (vertex2-vertex1, vertex3-vertex1) to calculate the normal of the plane. The normalized function is used to make sure that the normal vector has a magnitude of 1.
+
+This algorithm can be called after instantiating the Plane class and setting the three vertex points. It could be used in the following way:
+
+
+Plane myPlane = new Plane();
+myPlane.vertex1 = new Vector3(0, 0, 0);
+myPlane.vertex2 = new Vector3(1, 0, 0);
+myPlane.vertex3 = new Vector3(0, 1, 0);
+myPlane.ComputeNormal();
+Please note that the order of the vertex points is important, the normal will be flipped if the vertex points are given in the opposite order. Additionally, it's important to make sure that the vertex points are not collinear, as they do not define a unique plane.
